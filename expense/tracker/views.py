@@ -12,7 +12,7 @@ def index(request):
             messages.info(request, "Description Cannot be blank")
             return redirect('/')
         elif not amount.isdigit():
-            messages.info(request, "Enter a valid value amount")
+            messages.info(request, "Enter a valid value Amount")
             return redirect('/')
         else:
             Transaction.objects.create(
