@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 import uuid
 
 
@@ -14,6 +15,7 @@ class BaseModel(models.Model):
 class  Transaction(BaseModel):
     description=models.CharField(max_length=100)
     amount=models.FloatField()
+    created_by=models.ForeignKey(User,on_delete=models.CASCADE)
 
     class Meta:
         ordering=('amount',)

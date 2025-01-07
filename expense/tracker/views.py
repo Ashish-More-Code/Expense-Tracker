@@ -3,9 +3,10 @@ from django.contrib import messages
 from tracker.models import * 
 from django.db.models import Sum,Q
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required 
 from django.contrib.auth import authenticate,login,logout
 
-
+@login_required(login_url='/login')
 def index(request):
     if request.method=='POST':
         description=request.POST.get('description')
@@ -18,7 +19,8 @@ def index(request):
         else:
             Transaction.objects.create(
                 description=description,
-                amount=amount
+                amount=amount,
+                created_by=request.user
             )
             return redirect('/',)
         
@@ -28,13 +30,14 @@ def index(request):
             messages.info(request, "Enter a valid value Amount")
             return redirect('/')
     else:
-        context={"transactions":Transaction.objects.all(),
-                 "balance":Transaction.objects.aggregate(balance=Sum('amount'))['balance'] or 0,
-                "income":Transaction.objects.filter(amount__gte=0).aggregate(income=Sum('amount'))['income'] or 0,
-                "expense":Transaction.objects.filter(amount__lte=0).aggregate(expense=Sum('amount'))['expense'] or 0}
+        context={"transactions":Transaction.objects.filter(created_by=request.user),
+                 "balance":Transaction.objects.filter(created_by=request.user).aggregate(balance=Sum('amount'))['balance'] or 0,
+                "income":Transaction.objects.filter(created_by=request.user,amount__gte=0).aggregate(income=Sum('amount'))['income'] or 0,
+                "expense":Transaction.objects.filter(created_by=request.user,amount__lte=0).aggregate(expense=Sum('amount'))['expense'] or 0}
         print(context)
         return render(request,'index.html',context)
-
+        
+@login_required(login_url='/login')
 def deleteTransaction(request,uid):
     Transaction.objects.get(uuid=uid).delete()
     return  redirect("/")
@@ -49,7 +52,7 @@ def rigistration(request):
         if User.objects.filter(Q(username=user_name)| Q(email=email)).exists():
             messages.error(request, "Username already exists")
             return redirect('/register')
-        elif Q(first_name=="")| Q(last_name=="") | Q(user_name=="") | Q(email=="") |Q(password==""):
+        elif first_name=="" or last_name=="" or user_name=="" or email=="" or password=="":
             messages.error(request, "Fields cannot be blank")
             return redirect('/register')
         else:
